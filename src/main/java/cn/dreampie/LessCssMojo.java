@@ -53,7 +53,7 @@ public class LessCssMojo extends AbstractLessCssMojo {
       LessExecuteThread thread = new LessExecuteThread(lessCssCompiler, restartInterval);
       LessExecuteListener listen = new LessExecuteListener(thread);
       thread.addObserver(listen);
-      thread.run();
+      new Thread(thread).start();
     } else {
       lessCssCompiler.execute();
     }
