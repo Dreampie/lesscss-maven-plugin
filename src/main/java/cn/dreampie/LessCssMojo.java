@@ -3,6 +3,7 @@ package cn.dreampie;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
@@ -22,10 +23,12 @@ import java.io.File;
 // CHECKSTYLE_ON: LineLength
 public class LessCssMojo extends AbstractLessCssMojo {
 
+  private Log log = getLog();
+
   private LessCssCompiler lessCssCompiler;
 
   public void execute() throws MojoExecutionException, MojoFailureException {
-    LogKit.setLog(getLog());
+    LogKit.setLog(log);
     initCompiler();
     start();
   }
