@@ -51,7 +51,7 @@ public abstract class AbstractLessCssMojo extends AbstractMojo {
   /**
    * The directory for compiled css.
    */
-  @Parameter(defaultValue = "${project.build.directory}", required = true)
+  @Parameter(defaultValue = "${project.build.directory}/style", required = true)
   protected File outputDirectory;
 
   /**
