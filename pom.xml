@@ -153,7 +153,7 @@
   </dependencies>
 
   <build>
-    <finalName>coffeescript-maven-plugin</finalName>
+    <finalName>lesscss-maven-plugin</finalName>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
