@@ -134,7 +134,14 @@ public class LessCssCompiler extends AbstractLessCss {
           file = outputFileFormat.replaceAll(FILE_NAME_FORMAT_PARAMETER_REGEX, file.replace(".less", ""));
         }
 
-        File output = new File(outputDirectory, file.replace(".less", ".css"));
+        String outFile = null;
+        if (isCompress()) {
+          outFile = file.replace(".less", ".min.css");
+        } else {
+          outFile = file.replace(".less", ".css");
+        }
+
+        File output = new File(outputDirectory, outFile);
 
         if (!output.getParentFile().exists() && !output.getParentFile().mkdirs()) {
           throw new LessCssException("Cannot create output directory " + output.getParentFile());
