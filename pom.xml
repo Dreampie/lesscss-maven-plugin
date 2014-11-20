@@ -57,7 +57,7 @@
     <maven-plugin-annotations.version>3.3</maven-plugin-annotations.version>
     <commons-io.version>2.4</commons-io.version>
     <rhino.version>1.7R4</rhino.version>
-    <lesscss.version>1.7.0.1.1</lesscss.version>
+    <lesscss.version>0.1</lesscss.version>
     <plexus-container.version>1.5.5</plexus-container.version>
     <plexus-build.version>0.0.7</plexus-build.version>
     <plexus-utils.version>3.0.17</plexus-utils.version>
@@ -91,7 +91,7 @@
     </dependency>
 
     <dependency>
-      <groupId>org.lesscss</groupId>
+      <groupId>cn.dreampie</groupId>
       <artifactId>lesscss</artifactId>
       <version>${lesscss.version}</version>
       <exclusions>

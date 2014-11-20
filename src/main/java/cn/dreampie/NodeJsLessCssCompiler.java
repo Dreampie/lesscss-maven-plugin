@@ -14,11 +14,10 @@
  */
 package cn.dreampie;
 
+import cn.dreampie.resource.LessSource;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.maven.plugin.logging.Log;
-import org.lesscss.LessException;
-import org.lesscss.LessSource;
-import org.lesscss.deps.org.apache.commons.io.FileUtils;
-import org.lesscss.deps.org.apache.commons.io.IOUtils;
 
 import java.io.*;
 import java.util.Arrays;

@@ -1,10 +1,9 @@
 package cn.dreampie;
 
+import cn.dreampie.resource.LessSource;
 import org.apache.maven.plugin.logging.Log;
-import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.codehaus.plexus.util.Scanner;
-import org.lesscss.LessSource;
 
 import java.io.File;
 import java.io.FileNotFoundException;

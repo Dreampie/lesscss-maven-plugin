@@ -1,10 +1,8 @@
 package cn.dreampie;
 
+import cn.dreampie.resource.LessSource;
 import org.apache.maven.plugin.logging.Log;
 import org.codehaus.plexus.util.StringUtils;
-import org.lesscss.LessCompiler;
-import org.lesscss.LessException;
-import org.lesscss.LessSource;
 
 import java.io.File;
 import java.io.IOException;
