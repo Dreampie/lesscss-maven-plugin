@@ -94,12 +94,6 @@
       <groupId>cn.dreampie</groupId>
       <artifactId>lesscss</artifactId>
       <version>${lesscss.version}</version>
-      <exclusions>
-        <exclusion>
-          <artifactId>slf4j-simple</artifactId>
-          <groupId>org.slf4j</groupId>
-        </exclusion>
-      </exclusions>
     </dependency>
 
     <dependency>

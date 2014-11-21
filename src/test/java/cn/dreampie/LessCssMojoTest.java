@@ -5,8 +5,6 @@ import org.sonatype.plexus.build.incremental.ThreadBuildContext;
 
 import java.io.File;
 
-import static org.junit.Assert.*;
-
 public class LessCssMojoTest {
 
   @Test
@@ -16,8 +14,8 @@ public class LessCssMojoTest {
     File dir = new File(getClass().getResource("/").getPath());
     lessCssCompiler.setSourceDirectory(dir);
     lessCssCompiler.setOutputDirectory(dir);
-    lessCssCompiler.setCompress(true);
-    lessCssCompiler.setWatch(false);
+    lessCssCompiler.setCompress(false);
+    lessCssCompiler.setWatch(true);
 
     lessCssCompiler.execute();
   }

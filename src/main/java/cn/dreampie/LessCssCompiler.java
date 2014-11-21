@@ -1,5 +1,7 @@
 package cn.dreampie;
 
+import cn.dreampie.LessCompiler;
+import cn.dreampie.LessException;
 import cn.dreampie.resource.LessSource;
 import org.apache.maven.plugin.logging.Log;
 import org.codehaus.plexus.util.StringUtils;
@@ -69,7 +71,7 @@ public class LessCssCompiler extends AbstractLessCss {
   /**
    * Execute the MOJO.
    *
-   * @throws cn.dreampie.LessCssException if something unexpected occurs.
+   * @throws LessCssException if something unexpected occurs.
    */
   public void execute() throws LessCssException {
     log.info("sourceDirectory = " + sourceDirectory);
