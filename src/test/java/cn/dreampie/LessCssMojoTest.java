@@ -15,7 +15,7 @@ public class LessCssMojoTest {
     lessCssCompiler.setSourceDirectory(dir);
     lessCssCompiler.setOutputDirectory(dir);
     lessCssCompiler.setCompress(false);
-    lessCssCompiler.setWatch(true);
+    lessCssCompiler.setWatch(false);
 
     lessCssCompiler.execute();
   }
