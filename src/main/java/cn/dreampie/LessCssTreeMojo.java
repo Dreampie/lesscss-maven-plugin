@@ -20,8 +20,6 @@ import java.util.Map;
 // CHECKSTYLE_ON: LineLength
 public class LessCssTreeMojo extends AbstractLessCssMojo {
 
-  private Log log = getLog();
-
   protected String[] getIncludedFiles() {
     Scanner scanner = buildContext.newScanner(sourceDirectory, true);
     scanner.setIncludes(includes);
