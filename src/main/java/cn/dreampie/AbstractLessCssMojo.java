@@ -1,6 +1,7 @@
 package cn.dreampie;
 
 import org.apache.maven.plugin.AbstractMojo;
+import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.sonatype.plexus.build.incremental.BuildContext;
@@ -13,6 +14,9 @@ import java.io.File;
  */
 public abstract class AbstractLessCssMojo extends AbstractMojo {
 
+  protected Log log = getLog();
+
+  protected LessCssCompiler lessCssCompiler;
   /**
    * component
    */
@@ -55,18 +59,6 @@ public abstract class AbstractLessCssMojo extends AbstractMojo {
    */
   @Parameter(defaultValue = "false")
   protected boolean compress;
-
-  /**
-   * When <code>true</code> the plugin will watch for changes in less files and compile if it detects one.
-   */
-  @Parameter(defaultValue = "false")
-  protected boolean watch;
-
-  /**
-   * When <code>true</code> the plugin will watch for changes in less files and compile if it detects one.
-   */
-  @Parameter(defaultValue = "1000")
-  protected int watchInterval;
 
   /**
    * The character encoding the less compiler will use for writing the css.
