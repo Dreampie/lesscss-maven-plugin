@@ -23,24 +23,6 @@ public class LessCssMojo extends AbstractLessCssMojo {
     start();
   }
 
-  private void initCompiler() {
-    lessCssCompiler = new LessCssCompiler();
-    lessCssCompiler.setBuildContext(buildContext);
-    lessCssCompiler.setIncludes(includes);
-    lessCssCompiler.setExcludes(excludes);
-    lessCssCompiler.setLessJs(lessJs);
-    lessCssCompiler.setSkip(skip);
-    lessCssCompiler.setSourceDirectory(sourceDirectory);
-    lessCssCompiler.setOutputDirectory(outputDirectory);
-    lessCssCompiler.setForce(force);
-    lessCssCompiler.setEncoding(encoding);
-    lessCssCompiler.setCompress(compress);
-    lessCssCompiler.setWatch(false);
-//    lessCssCompiler.setWatchInterval(watchInterval);
-    lessCssCompiler.setNodeExecutable(nodeExecutable);
-    lessCssCompiler.setOutputFileFormat(outputFileFormat);
-  }
-
   private void start() {
     lessCssCompiler.execute();
   }

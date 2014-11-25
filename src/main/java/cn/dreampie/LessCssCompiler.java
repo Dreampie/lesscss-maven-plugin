@@ -9,6 +9,8 @@ import org.codehaus.plexus.util.StringUtils;
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Arrays;
 
 /**
@@ -55,11 +57,6 @@ public class LessCssCompiler extends AbstractLessCss {
   private File lessJs;
 
   /**
-   * The location of the NodeJS executable.
-   */
-  private String nodeExecutable;
-
-  /**
    * The format of the output file names.
    */
   private String outputFileFormat;
@@ -68,12 +65,16 @@ public class LessCssCompiler extends AbstractLessCss {
 
   private long lastErrorModified = 0;
 
+  protected boolean followDelete = false;
+
+  private static final WatchEvent.Kind<?>[] watchEvents = {StandardWatchEventKinds.ENTRY_CREATE, StandardWatchEventKinds.ENTRY_MODIFY, StandardWatchEventKinds.ENTRY_DELETE};
+
   /**
    * Execute the MOJO.
    *
-   * @throws LessCssException if something unexpected occurs.
+   * @throws LessException if something unexpected occurs.
    */
-  public void execute() throws LessCssException {
+  public void execute(){
     log.info("sourceDirectory = " + sourceDirectory);
     log.info("outputDirectory = " + outputDirectory);
     log.debug("includes = " + Arrays.toString(includes));
@@ -83,141 +84,191 @@ public class LessCssCompiler extends AbstractLessCss {
     log.debug("skip = " + skip);
 
     if (!skip) {
-      if (watch) {
-        log.info("Watching " + sourceDirectory);
-        if (force) {
-          force = false;
-          log.info("Disabled the 'force' flag in watch mode.");
-        }
-        Thread.currentThread().setPriority(Thread.MIN_PRIORITY);
-        while (watch && !Thread.currentThread().isInterrupted()) {
-          executeInternal();
-          try {
-            Thread.sleep(watchInterval);
-          } catch (InterruptedException e) {
-            log.error("interrupted");
-          }
-        }
+      String[] files = getIncludedFiles();
+
+      if (files == null || files.length < 1) {
+        log.info("Nothing to compile - no LESS sources found");
       } else {
-        executeInternal();
+        if (log.isDebugEnabled()) {
+          log.debug("included files = " + Arrays.toString(files));
+        }
+
+        Object lessCompiler = initLessCompiler();
+        compileIfChanged(files, lessCompiler);
+        if (watch) {
+          log.info("Watching " + sourceDirectory);
+          if (force) {
+            force = false;
+            log.info("Disabled the 'force' flag in watch mode.");
+          }
+          startWatch(files, lessCompiler);
+        }
       }
-//                        }
-//                    }, Akka.system().dispatcher());
     } else {
       log.info("Skipping plugin execution per configuration");
     }
   }
 
-  private void executeInternal() throws LessCssException {
-    String[] files = getIncludedFiles();
 
-    if (files == null || files.length < 1) {
-      log.info("Nothing to compile - no LESS sources found");
+  private void compileIfChanged(String[] files, Object lessCompiler) {
+    for (String file : files) {
+      compileIfChanged(lessCompiler, file);
+    }
+  }
+
+  private void compileIfChanged(Object lessCompiler, String file) {
+    File input = new File(sourceDirectory, file);
+
+    buildContext.removeMessages(input);
+
+    if (outputFileFormat != null) {
+      file = outputFileFormat.replaceAll(FILE_NAME_FORMAT_PARAMETER_REGEX, file.replace(".less", ""));
+    }
+
+    String outFile = null;
+    if (isCompress()) {
+      outFile = file.replace(".less", ".min.css");
     } else {
-      if (log.isDebugEnabled()) {
-        log.debug("included files = " + Arrays.toString(files));
-      }
-
-      Object lessCompiler = initLessCompiler();
-      compileIfChanged(files, lessCompiler);
+      outFile = file.replace(".less", ".css");
     }
-  }
 
-  private void compileIfChanged(String[] files, Object lessCompiler) throws LessCssException {
+    File output = new File(outputDirectory, outFile);
+
+    if (!output.getParentFile().exists() && !output.getParentFile().mkdirs()) {
+      log.error("Cannot create output directory " + output.getParentFile());
+      return;
+    }
+
     try {
-      for (String file : files) {
-        File input = new File(sourceDirectory, file);
-
-        buildContext.removeMessages(input);
-
-        if (outputFileFormat != null) {
-          file = outputFileFormat.replaceAll(FILE_NAME_FORMAT_PARAMETER_REGEX, file.replace(".less", ""));
+      LessSource lessSource = new LessSource(input);
+      long lessLastModified = lessSource.getLastModifiedIncludingImports();
+      if (!output.exists() || (force || output.lastModified() < lessLastModified) && lastErrorModified < lessLastModified) {
+        lastErrorModified = lessLastModified;
+        long compilationStarted = System.currentTimeMillis();
+        log.info("Compiling LESS source: " + file);
+        if (lessCompiler instanceof LessCompiler) {
+          ((LessCompiler) lessCompiler).compile(lessSource, output, force);
         }
-
-        String outFile = null;
-        if (isCompress()) {
-          outFile = file.replace(".less", ".min.css");
-        } else {
-          outFile = file.replace(".less", ".css");
-        }
-
-        File output = new File(outputDirectory, outFile);
-
-        if (!output.getParentFile().exists() && !output.getParentFile().mkdirs()) {
-          throw new LessCssException("Cannot create output directory " + output.getParentFile());
-        }
-
-        try {
-          LessSource lessSource = new LessSource(input);
-          long lessLastModified = lessSource.getLastModifiedIncludingImports();
-          if (!output.exists() || (force || output.lastModified() < lessLastModified) && lastErrorModified < lessLastModified) {
-            lastErrorModified = lessLastModified;
-            long compilationStarted = System.currentTimeMillis();
-            log.info("Compiling LESS source: " + file);
-            if (lessCompiler instanceof LessCompiler) {
-              ((LessCompiler) lessCompiler).compile(lessSource, output, force);
-            } else {
-              ((NodeJsLessCssCompiler) lessCompiler).compile(lessSource, output, force);
-            }
-            buildContext.refresh(output);
-            log.info("Finished compilation to " + outputDirectory + " in " + (System.currentTimeMillis() - compilationStarted) + " ms");
-          } else if (!watch) {
-            log.info("Bypassing LESS source: " + file + " (not modified)");
-          }
-        } catch (IOException e) {
-//                    buildContext.addMessage(input, 0, 0, "Error compiling LESS source", BuildContext.SEVERITY_ERROR, e);
-          throw new LessCssException("Error while compiling LESS source: " + file, e);
-        } catch (LessException e) {
-          String message = e.getMessage();
-          if (StringUtils.isEmpty(message)) {
-            message = "Error compiling LESS source";
-          }
-//                    buildContext.addMessage(input, 0, 0, "Error compiling LESS source", BuildContext.SEVERITY_ERROR, e);
-          throw new LessCssException("Error while compiling LESS source: " + file, e);
-        } catch (InterruptedException e) {
-//                    buildContext.addMessage(input, 0, 0, "Error compiling LESS source", BuildContext.SEVERITY_ERROR, e);
-          throw new LessCssException("Error while compiling LESS source: " + file, e);
-        }
+        buildContext.refresh(output);
+        log.info("Finished compilation to " + outputDirectory + " in " + (System.currentTimeMillis() - compilationStarted) + " ms");
+      } else if (!watch) {
+        log.info("Bypassing LESS source: " + file + " (not modified)");
       }
-    } finally {
-      if (lessCompiler instanceof NodeJsLessCssCompiler) {
-        ((NodeJsLessCssCompiler) lessCompiler).close();
-      }
+    } catch (IOException e) {
+//                    buildContext.addMessage(input, 0, 0, "Error compiling LESS source", BuildContext.SEVERITY_ERROR, e);
+      log.error("Error while compiling LESS source: " + file, e);
+    } catch (LessException e) {
+      log.error("Error while compiling LESS source: " + file, e);
     }
   }
 
-  private Object initLessCompiler() throws LessCssException {
+  private Object initLessCompiler() throws LessException {
     if (lessCompiler == null) {
-      if (nodeExecutable != null) {
-        NodeJsLessCssCompiler nodeJsLessCssCompiler;
+      LessCompiler newLessCompiler = new LessCompiler();
+      newLessCompiler.setCompress(compress);
+      newLessCompiler.setEncoding(encoding);
+      if (lessJs != null) {
         try {
-          nodeJsLessCssCompiler = new NodeJsLessCssCompiler(nodeExecutable, compress, encoding, log);
-        } catch (IOException e) {
-          throw new LessCssException(e.getMessage(), e);
+          newLessCompiler.setLessJs(lessJs.toURI().toURL());
+        } catch (MalformedURLException e) {
+          throw new LessException(
+              "Error while loading LESS JavaScript: " + lessJs.getAbsolutePath(), e);
         }
-        if (lessJs != null) {
-          throw new LessCssException(
-              "Custom LESS JavaScript is not currently supported when using nodeExecutable");
-        }
-        lessCompiler = nodeJsLessCssCompiler;
-      } else {
-        LessCompiler newLessCompiler = new LessCompiler();
-        newLessCompiler.setCompress(compress);
-        newLessCompiler.setEncoding(encoding);
-        if (lessJs != null) {
-          try {
-            newLessCompiler.setLessJs(lessJs.toURI().toURL());
-          } catch (MalformedURLException e) {
-            throw new LessCssException(
-                "Error while loading LESS JavaScript: " + lessJs.getAbsolutePath(), e);
-          }
-        }
-        lessCompiler = newLessCompiler;
       }
+      lessCompiler = newLessCompiler;
     }
     return lessCompiler;
   }
 
+  private void startWatch(String[] files, Object compiler) {
+    Path sourcePath = sourceDirectory.toPath();
+    Path outPath = outputDirectory.toPath();
+    WatchService watchService = null;
+    try {
+      watchService = initWatch(sourcePath);
+    } catch (IOException e) {
+      throw new LessException("Error watch sourceDirectory: " + sourceDirectory.getAbsolutePath(), e);
+    }
+    boolean changed = true;
+    while (true) {
+      if (changed) {
+        log.info("Waiting for changes...");
+        changed = false;
+      }
+
+      WatchKey watchKey = null;
+      try {
+        watchKey = watchService.take();
+      } catch (InterruptedException e) {
+        throw new LessException("Error get watch key", e);
+      }
+      Path dir = (Path) watchKey.watchable();
+
+      for (WatchEvent<?> event : watchKey.pollEvents()) {
+        Path file = dir.resolve((Path) event.context());
+        log.debug(String.format("watched %s - %s", event.kind().name(), file));
+
+        if (Files.isDirectory(file)) {
+          if (event.kind().name().equals(StandardWatchEventKinds.ENTRY_CREATE.name())) {
+            // watch created folder.
+            try {
+              file.register(watchService, watchEvents);
+            } catch (IOException e) {
+              throw new LessException("Error register new folder", e);
+            }
+            log.debug(String.format("watch %s", file));
+          }
+          continue;
+        }
+
+        String fileName = sourcePath.relativize(file).toString();
+
+        String outName = "";
+
+        for (String name : files) {
+          if (name != null && name.equals(fileName)) {
+            if (event.kind().name().equals(StandardWatchEventKinds.ENTRY_DELETE.name())) {
+              if (followDelete) {
+                if (isCompress()) {
+                  outName = fileName.replace(".less", ".min.css");
+                } else {
+                  outName = fileName.replace(".less", ".css");
+                }
+
+                try {
+                  if (Files.deleteIfExists(outPath.resolve(outName))) {
+                    log.info(String.format("deleted %s with %s", outName, name));
+                    changed = true;
+                  }
+                } catch (IOException e) {
+                  throw new LessException("Error delete file:" + outName, e);
+                }
+              }
+            } else if (event.kind().name().equals(StandardWatchEventKinds.ENTRY_MODIFY.name()) || event.kind().name().equals(StandardWatchEventKinds.ENTRY_CREATE.name())) {
+              compileIfChanged(compiler, fileName);
+              changed = true;
+            }
+          }
+        }
+      }
+      watchKey.reset();
+    }
+
+  }
+
+  private WatchService initWatch(Path sourceDirectory) throws IOException {
+    final WatchService watchService = sourceDirectory.getFileSystem().newWatchService();
+
+    Files.walkFileTree(sourceDirectory, new SimpleFileVisitor<Path>() {
+      @Override
+      public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+        dir.register(watchService, watchEvents);
+        log.debug(String.format("watch %s", dir));
+        return FileVisitResult.CONTINUE;
+      }
+    });
+    return watchService;
+  }
 
   public File getOutputDirectory() {
     return outputDirectory;
@@ -275,14 +326,6 @@ public class LessCssCompiler extends AbstractLessCss {
     this.lessJs = lessJs;
   }
 
-  public String getNodeExecutable() {
-    return nodeExecutable;
-  }
-
-  public void setNodeExecutable(String nodeExecutable) {
-    this.nodeExecutable = nodeExecutable;
-  }
-
   public String getOutputFileFormat() {
     return outputFileFormat;
   }
@@ -297,5 +340,13 @@ public class LessCssCompiler extends AbstractLessCss {
 
   public void setLastErrorModified(long lastErrorModified) {
     this.lastErrorModified = lastErrorModified;
+  }
+
+  public boolean isFollowDelete() {
+    return followDelete;
+  }
+
+  public void setFollowDelete(boolean followDelete) {
+    this.followDelete = followDelete;
   }
 }

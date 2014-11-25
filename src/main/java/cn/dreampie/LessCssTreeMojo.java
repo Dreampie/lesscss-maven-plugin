@@ -47,9 +47,9 @@ public class LessCssTreeMojo extends AbstractLessCssMojo {
           LessSource lessSource = new LessSource(lessFile);
           listLessSource(lessSource, file, 0, false);
         } catch (FileNotFoundException e) {
-          throw new LessCssException("Error while loading less source: " + lessFile.getAbsolutePath(), e);
+          throw new LessException("Error while loading less source: " + lessFile.getAbsolutePath(), e);
         } catch (IOException e) {
-          throw new LessCssException("Error while loading less source: " + lessFile.getAbsolutePath(), e);
+          throw new LessException("Error while loading less source: " + lessFile.getAbsolutePath(), e);
         }
       }
     }

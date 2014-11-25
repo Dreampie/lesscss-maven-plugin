@@ -17,11 +17,8 @@ import org.apache.maven.plugins.annotations.Parameter;
 // CHECKSTYLE_ON: LineLength
 public class LessCssWatchMojo extends AbstractLessCssMojo {
 
-  /**
-   * When <code>true</code> the plugin will watch for changes in less files and compile if it detects one.
-   */
   @Parameter(defaultValue = "false")
-  private boolean watchInThread;
+  protected boolean followDelete;
 
   public void execute() throws MojoExecutionException, MojoFailureException {
     LogKit.setLog(log);
@@ -29,33 +26,10 @@ public class LessCssWatchMojo extends AbstractLessCssMojo {
     start();
   }
 
-  private void initCompiler() {
-    lessCssCompiler = new LessCssCompiler();
-    lessCssCompiler.setBuildContext(buildContext);
-    lessCssCompiler.setIncludes(includes);
-    lessCssCompiler.setExcludes(excludes);
-    lessCssCompiler.setLessJs(lessJs);
-    lessCssCompiler.setSkip(skip);
-    lessCssCompiler.setSourceDirectory(sourceDirectory);
-    lessCssCompiler.setOutputDirectory(outputDirectory);
-    lessCssCompiler.setForce(force);
-    lessCssCompiler.setEncoding(encoding);
-    lessCssCompiler.setCompress(compress);
-    lessCssCompiler.setWatch(true);
-//    lessCssCompiler.setWatchInterval(watchInterval);
-    lessCssCompiler.setNodeExecutable(nodeExecutable);
-    lessCssCompiler.setOutputFileFormat(outputFileFormat);
-  }
-
   private void start() {
-    if (watchInThread) {
-      LessExecuteThread thread = new LessExecuteThread(lessCssCompiler, restartInterval);
-      LessExecuteListener listen = new LessExecuteListener(thread);
-      thread.addObserver(listen);
-      new Thread(thread).start();
-    } else {
-      lessCssCompiler.execute();
-    }
+    lessCssCompiler.setFollowDelete(followDelete);
+    lessCssCompiler.setWatch(true);
+    lessCssCompiler.execute();
   }
 
 }
