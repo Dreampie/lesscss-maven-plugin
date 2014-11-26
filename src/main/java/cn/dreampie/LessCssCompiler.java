@@ -74,7 +74,7 @@ public class LessCssCompiler extends AbstractLessCss {
    *
    * @throws LessException if something unexpected occurs.
    */
-  public void execute(){
+  public void execute() {
     log.info("sourceDirectory = " + sourceDirectory);
     log.info("outputDirectory = " + outputDirectory);
     log.debug("includes = " + Arrays.toString(includes));
@@ -227,14 +227,19 @@ public class LessCssCompiler extends AbstractLessCss {
 
         for (String name : files) {
           if (name != null && name.equals(fileName)) {
+
+            if (isCompress()) {
+              outName = fileName.replace(".less", ".min.css");
+            } else {
+              outName = fileName.replace(".less", ".css");
+            }
+
+            if (Files.exists(sourcePath.resolve(fileName)) && Files.notExists(outPath.resolve(outName))) {
+              compileIfChanged(compiler, fileName);
+            }
+
             if (event.kind().name().equals(StandardWatchEventKinds.ENTRY_DELETE.name())) {
               if (followDelete) {
-                if (isCompress()) {
-                  outName = fileName.replace(".less", ".min.css");
-                } else {
-                  outName = fileName.replace(".less", ".css");
-                }
-
                 try {
                   if (Files.deleteIfExists(outPath.resolve(outName))) {
                     log.info(String.format("deleted %s with %s", outName, name));
