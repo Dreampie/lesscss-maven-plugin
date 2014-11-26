@@ -17,8 +17,11 @@ import org.apache.maven.plugins.annotations.Parameter;
 // CHECKSTYLE_ON: LineLength
 public class LessCssWatchMojo extends AbstractLessCssMojo {
 
+  /**
+   * When <code>true</code> the plugin will watch for changes in less files and compile if it detects one.
+   */
   @Parameter(defaultValue = "false")
-  protected boolean followDelete;
+  private boolean watchInThread;
 
   public void execute() throws MojoExecutionException, MojoFailureException {
     LogKit.setLog(log);
@@ -27,9 +30,14 @@ public class LessCssWatchMojo extends AbstractLessCssMojo {
   }
 
   private void start() {
-    lessCssCompiler.setFollowDelete(followDelete);
-    lessCssCompiler.setWatch(true);
-    lessCssCompiler.execute();
+    if (watchInThread) {
+      LessExecuteThread thread = new LessExecuteThread(lessCssCompiler, restartInterval);
+      LessExecuteListener listen = new LessExecuteListener(thread);
+      thread.addObserver(listen);
+      new Thread(thread).start();
+    } else {
+      lessCssCompiler.execute();
+    }
   }
 
 }

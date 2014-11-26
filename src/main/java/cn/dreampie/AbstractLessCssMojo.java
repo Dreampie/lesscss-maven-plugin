@@ -79,11 +79,28 @@ public abstract class AbstractLessCssMojo extends AbstractMojo {
   protected File lessJs;
 
   /**
+   * The location of the NodeJS executable.
+   */
+  @Parameter
+  protected String nodeExecutable;
+
+  /**
    * The format of the output file names.
    */
   @Parameter
   protected String outputFileFormat;
 
+  /**
+   * The compile args.
+   */
+  @Parameter
+  protected String[] args;
+
+  /**
+   * The restart thread time.
+   */
+  @Parameter(defaultValue = "1000")
+  protected int restartInterval;
 
   protected void initCompiler() {
     lessCssCompiler = new LessCssCompiler();
@@ -97,8 +114,8 @@ public abstract class AbstractLessCssMojo extends AbstractMojo {
     lessCssCompiler.setForce(force);
     lessCssCompiler.setEncoding(encoding);
     lessCssCompiler.setCompress(compress);
-    lessCssCompiler.setWatch(false);
 //    lessCssCompiler.setWatchInterval(watchInterval);
+//    lessCssCompiler.setNodeExecutable(nodeExecutable);
     lessCssCompiler.setOutputFileFormat(outputFileFormat);
   }
 }
